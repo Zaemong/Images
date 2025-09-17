@@ -1,36 +1,52 @@
-# self-hosted-runner Dockerイメージ
+# GitHub Actions Runner Docker Image
 
-このリポジトリは、GitHub ActionsのセルフホストランナーをDockerコンテナとして構築・運用するためのイメージを提供します。
+This Docker image provides a lightweight GitHub Actions runner that can be easily deployed to run your GitHub Actions workflows.
 
-## 構成ファイル
-- `Dockerfile`: ランナーのセットアップと実行環境の構築
-- `entrypoint.sh`: ランナーの登録・起動処理を自動化
+## Features
 
-## 使い方
+- Lightweight container using multi-stage build
+- Automatically registers with your GitHub repository or organization
+- Easy configuration via environment variables
+- Based on Node.js 24 slim image
 
-### 1. ビルド
+## Usage
+
+### Required Environment Variables
+
+- `URL`: The GitHub repository or organization URL
+- `TOKEN`: The runner registration token
+
+### Optional Environment Variables
+
+- `NAME`: Custom name for the runner (default: hostname)
+- `RUNNER_GROUP`: Runner group name (if applicable)
+
+### Running the Container
+
 ```bash
-docker buildx build -t self-hosted-runner .
+docker run -d \
+  -e URL="https://github.com/your-org/your-repo" \
+  -e TOKEN="your-runner-token" \
+  -e NAME="custom-runner-name" \
+  -e RUNNER_GROUP="default" \
+  --name github-runner \
+  your-image-name
 ```
 
-### 2. 実行
-必要な環境変数（`URL`, `TOKEN`）を指定して起動します。
+## Building the Image
 
 ```bash
-docker run -e URL="<GitHubリポジトリURL>" -e TOKEN="<登録用トークン>" self-hosted-runner
+docker build -t github-actions-runner:latest .
 ```
 
-#### オプション環境変数
-- `NAME`: ランナー名（省略可）
-- `RUNNER_GROUP`: ランナーグループ（省略可）
+## How It Works
 
-### 3. 動作概要
-- `.runner` ディレクトリが存在する場合は、登録済みとして `run.sh` のみ実行します。
-- 未登録の場合は `config.sh` でランナー登録後、`run.sh` を実行します。
+1. On first run, the runner registers with GitHub using the provided URL and token
+2. For subsequent runs, the runner uses existing registration
+3. The entrypoint script handles both scenarios automatically
 
-## 注意事項
-- `URL` と `TOKEN` は必須です。未指定の場合は起動時にエラーとなります。
-- LinuxベースのNode公式イメージ（`node:24-slim`）を利用しています。
+## Notes
 
-## ライセンス
-MIT
+- The runner is configured with user ID 1100 for security
+- All unnecessary build tools and caches are removed to keep the image lightweight
+- The runner version can be customized during build using the `RUNNER_VERSION` build argument
