@@ -12,7 +12,9 @@ RUN apt-get update \
   && cd /opt/action-runner \
   && curl -o actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz -L https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz \
   && tar xzf ./actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz \
-  && rm -f ./actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz
+  && rm -f ./actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz \
+  && apt-get autoremove -y \
+  && apt-get clean
 
 RUN groupadd -g 1100 action-runner \
   && useradd -m -s /bin/bash -u 1100 -g 1100 action-runner \
@@ -20,8 +22,9 @@ RUN groupadd -g 1100 action-runner \
   && chmod +x /opt/action-runner/run.sh \
   && chmod +x /opt/action-runner/entrypoint.sh
 
+FROM node:24-slim AS runner
+WORKDIR /opt/action-runner
+COPY --from=builder /opt/action-runner /opt/action-runner
 USER action-runner
-
 ENTRYPOINT ["./entrypoint.sh"]
-
 CMD ["./run.sh"]
